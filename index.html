@@ -168,23 +168,31 @@
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const response = await fetch('https://file.io', { method: 'POST', body: formData });
-                const data = await response.json();
+                // Use transfer.sh instead of file.io
+                const response = await fetch('https://transfer.sh/', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                if (data.success) {
+                if (response.ok) {
+                    const link = await response.text();
+                    const cleanLink = link.trim();
+
                     items.unshift({ 
                         type: 'file', 
                         name: selectedFile.name, 
-                        link: data.link, 
+                        link: cleanLink, 
                         size: formatSize(selectedFile.size),
                         time: new Date().toLocaleString() 
                     });
                     await saveItems();
                     showLink();
                 } else {
-                    alert('Ошибка загрузки');
+                    alert('Ошибка загрузки: ' + response.status);
                 }
-            } catch (e) { alert('Ошибка: ' + e.message); }
+            } catch (e) { 
+                alert('Ошибка: ' + e.message); 
+            }
 
             document.getElementById('loading').classList.remove('show');
             document.getElementById('upload-btn').disabled = false;
