@@ -7,12 +7,12 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         body { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; border-radius: 24px; padding: 30px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+        .container { background: white; border-radius: 24px; padding: 30px; width: 100%; max-width: 600px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
         h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 28px; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
-        textarea { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; resize: vertical; min-height: 150px; margin-bottom: 15px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 20px; }
+        textarea { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; resize: vertical; min-height: 100px; margin-bottom: 15px; }
         textarea:focus { outline: none; border-color: #1e3c72; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 10px; transition: all 0.3s; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 10px; transition: all 0.3s; }
         .primary-btn { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
         .secondary-btn { background: #f0f0f0; color: #333; }
         .file-btn { background: #ff9800; color: white; }
@@ -20,19 +20,19 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .result { margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px; display: none; }
         .result.show { display: block; }
-        .result-text { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0; word-break: break-all; font-family: monospace; margin-bottom: 15px; max-height: 100px; overflow-y: auto; }
+        .result-text { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0; word-break: break-all; font-family: monospace; margin-bottom: 15px; max-height: 80px; overflow-y: auto; }
         .copy-btn { background: #10b981; color: white; }
         .view-mode { display: none; }
         .view-mode.show { display: block; }
         .shared-content { background: #e8f5e9; padding: 20px; border-radius: 12px; margin-top: 20px; white-space: pre-wrap; word-break: break-word; }
         .back-btn { background: #1e3c72; color: white; margin-top: 20px; }
         .warning { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: #856404; }
-        .divider { text-align: center; color: #999; margin: 20px 0; position: relative; }
+        .divider { text-align: center; color: #999; margin: 15px 0; position: relative; }
         .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: #e0e0e0; }
         .divider::before { left: 0; }
         .divider::after { right: 0; }
         .file-input { display: none; }
-        .file-label { display: block; padding: 30px; border: 2px dashed #ccc; border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 15px; }
+        .file-label { display: block; padding: 25px; border: 2px dashed #ccc; border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 15px; }
         .file-label:hover { border-color: #1e3c72; background: #f8f9fa; }
         .file-info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none; }
         .file-info.show { display: block; }
@@ -40,69 +40,106 @@
         .loading.show { display: block; }
         .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #1e3c72; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .items-list { margin-top: 20px; }
+        .item { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #1e3c72; }
+        .item-time { font-size: 12px; color: #999; }
+        .item-text { margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
+        .item-file { margin-top: 8px; }
+        .item-file a { color: #1e3c72; text-decoration: none; font-weight: 600; }
+        .empty { text-align: center; color: #999; padding: 30px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📂 File Share</h1>
-        <p class="subtitle">Загружай файлы и делись ими</p>
+        <p class="subtitle">Все файлы на одной ссылке</p>
 
         <div id="create-mode">
-            <!-- Text Section -->
-            <textarea id="text-input" placeholder="Введи текст для передачи..."></textarea>
-            <button class="btn primary-btn" onclick="createTextLink()">📝 Создать ссылку на текст</button>
+            <div class="warning">⚠️ Файлы хранятся 24 часа!</div>
+
+            <textarea id="text-input" placeholder="Введи текст..."></textarea>
+            <button class="btn primary-btn" onclick="addText()">📝 Добавить текст</button>
 
             <div class="divider">или</div>
 
-            <!-- File Section -->
             <label class="file-label" for="file-input">
                 📎 Нажми, чтобы выбрать файл
-                <br><small style="color: #999;">(макс. 100MB)</small>
             </label>
             <input type="file" id="file-input" class="file-input" onchange="handleFileSelect()">
 
             <div id="file-info" class="file-info">
-                <strong>Выбранный файл:</strong> <span id="file-name"></span>
+                <strong>Файл:</strong> <span id="file-name"></span>
                 <br><strong>Размер:</strong> <span id="file-size"></span>
             </div>
 
             <button id="upload-btn" class="btn file-btn" onclick="uploadFile()" style="display: none;">📤 Загрузить файл</button>
 
-            <button class="btn secondary-btn" onclick="clearAll()">🗑 Очистить</button>
+            <div class="divider">или</div>
+
+            <button class="btn secondary-btn" onclick="showAll()">📋 Показать все загруженные</button>
         </div>
 
         <div id="view-mode" class="view-mode">
-            <h2 style="margin-bottom: 15px;">📝 Полученный текст:</h2>
-            <div id="shared-content" class="shared-content"></div>
-            <button class="btn back-btn" onclick="goBack()">← Загрузить свой файл</button>
+            <h2 style="margin-bottom: 15px;">📋 Все загруженные файлы:</h2>
+            <div id="items-list" class="items-list"></div>
+            <button class="btn back-btn" onclick="goBack()">← Назад</button>
         </div>
 
         <div id="result" class="result">
-            <strong>Ссылка:</strong>
+            <strong>Ссылка для друзей:</strong>
             <div class="result-text" id="result-text"></div>
             <button class="btn copy-btn" onclick="copyLink()">📋 Копировать</button>
         </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Загрузка файла...</p>
+            <p>Загрузка...</p>
         </div>
     </div>
 
     <script>
-        let selectedFile = null;
+        const BIN_ID = '6772c6e1acd742cb91994e47';
+        let items = [];
 
-        window.onload = function() {
-            const hash = window.location.hash.substring(1);
-            if (hash) {
-                try {
-                    const decoded = decodeURIComponent(escape(atob(hash)));
-                    document.getElementById('create-mode').style.display = 'none';
-                    document.getElementById('view-mode').classList.add('show');
-                    document.getElementById('shared-content').textContent = decoded;
-                } catch (e) { alert('Ошибка декодирования'); }
-            }
+        window.onload = async function() {
+            await loadItems();
         };
+
+        async function loadItems() {
+            try {
+                const response = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
+                    headers: { 'X-Bin-Meta': 'false' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    items = data.record || [];
+                }
+            } catch (e) { items = []; }
+        }
+
+        async function saveItems() {
+            try {
+                await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Bin-Meta': 'false'
+                    },
+                    body: JSON.stringify(items)
+                });
+            } catch (e) { console.log('Save error:', e); }
+        }
+
+        async function addText() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) { alert('Введи текст'); return; }
+
+            items.unshift({ type: 'text', content: text, time: new Date().toLocaleString() });
+            await saveItems();
+
+            document.getElementById('text-input').value = '';
+            showLink();
+        }
 
         function handleFileSelect() {
             const input = document.getElementById('file-input');
@@ -131,53 +168,62 @@
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const response = await fetch('https://file.io', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('https://file.io', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
-                    document.getElementById('result-text').textContent = data.link;
-                    document.getElementById('result').classList.add('show');
+                    items.unshift({ 
+                        type: 'file', 
+                        name: selectedFile.name, 
+                        link: data.link, 
+                        size: formatSize(selectedFile.size),
+                        time: new Date().toLocaleString() 
+                    });
+                    await saveItems();
+                    showLink();
                 } else {
-                    alert('Ошибка загрузки: ' + (data.message || 'Unknown error'));
+                    alert('Ошибка загрузки');
                 }
-            } catch (e) {
-                alert('Ошибка: ' + e.message);
-            }
+            } catch (e) { alert('Ошибка: ' + e.message); }
 
             document.getElementById('loading').classList.remove('show');
             document.getElementById('upload-btn').disabled = false;
         }
 
-        function createTextLink() {
-            const text = document.getElementById('text-input').value.trim();
-            if (!text) { alert('Введи текст'); return; }
-            const encoded = btoa(unescape(encodeURIComponent(text)));
-            const link = window.location.origin + window.location.pathname + '#' + encoded;
+        function showLink() {
+            const link = window.location.origin + window.location.pathname;
             document.getElementById('result-text').textContent = link;
             document.getElementById('result').classList.add('show');
         }
 
-        function copyLink() {
-            const text = document.getElementById('result-text').textContent;
-            navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(err => alert('Ошибка копирования'));
+        function showAll() {
+            document.getElementById('create-mode').style.display = 'none';
+            document.getElementById('view-mode').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+
+            const list = document.getElementById('items-list');
+            if (items.length === 0) {
+                list.innerHTML = '<div class="empty">Пока ничего нет</div>';
+                return;
+            }
+
+            list.innerHTML = items.map(item => {
+                if (item.type === 'text') {
+                    return '<div class="item"><div class="item-time">' + item.time + '</div><div class="item-text">' + item.content + '</div></div>';
+                } else {
+                    return '<div class="item"><div class="item-time">' + item.time + '</div><div class="item-file"><a href="' + item.link + '" target="_blank">📎 ' + item.name + ' (' + item.size + ')</a></div></div>';
+                }
+            }).join('');
         }
 
-        function clearAll() {
-            document.getElementById('text-input').value = '';
-            document.getElementById('file-input').value = '';
-            selectedFile = null;
-            document.getElementById('file-info').classList.remove('show');
-            document.getElementById('upload-btn').style.display = 'none';
-            document.getElementById('result').classList.remove('show');
+        function copyLink() {
+            const text = document.getElementById('result-text').textContent;
+            navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(err => alert('Ошибка'));
         }
 
         function goBack() {
-            window.location.hash = '';
-            window.location.reload();
+            document.getElementById('view-mode').classList.remove('show');
+            document.getElementById('create-mode').style.display = 'block';
         }
     </script>
 </body>
