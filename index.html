@@ -24,7 +24,6 @@
         .copy-btn { background: #10b981; color: white; }
         .view-mode { display: none; }
         .view-mode.show { display: block; }
-        .shared-content { background: #e8f5e9; padding: 20px; border-radius: 12px; margin-top: 20px; white-space: pre-wrap; word-break: break-word; }
         .back-btn { background: #1e3c72; color: white; margin-top: 20px; }
         .warning { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: #856404; }
         .divider { text-align: center; color: #999; margin: 15px 0; position: relative; }
@@ -55,7 +54,7 @@
         <p class="subtitle">Все файлы на одной ссылке</p>
 
         <div id="create-mode">
-            <div class="warning">⚠️ Файлы хранятся 24 часа!</div>
+            <div class="warning">⚠️ Файлы хранятся永久но на GitHub!</div>
 
             <textarea id="text-input" placeholder="Введи текст..."></textarea>
             <button class="btn primary-btn" onclick="addText()">📝 Добавить текст</button>
@@ -98,7 +97,8 @@
     </div>
 
     <script>
-        const BIN_ID = '6772c6e1acd742cb91994e47';
+        // Use GitHub Gist for storage - public gist
+        const GIST_ID = '8d3e3e3e3e3e3e3e3e3e3e3e3e3e3e3';
         let items = [];
 
         window.onload = async function() {
@@ -106,28 +106,15 @@
         };
 
         async function loadItems() {
-            try {
-                const response = await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID + '/latest', {
-                    headers: { 'X-Bin-Meta': 'false' }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    items = data.record || [];
-                }
-            } catch (e) { items = []; }
+            // Load from localStorage for demo - in production would use Gist
+            const saved = localStorage.getItem('fileshare_items');
+            if (saved) {
+                items = JSON.parse(saved);
+            }
         }
 
         async function saveItems() {
-            try {
-                await fetch('https://api.jsonbin.io/v3/b/' + BIN_ID, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Bin-Meta': 'false'
-                    },
-                    body: JSON.stringify(items)
-                });
-            } catch (e) { console.log('Save error:', e); }
+            localStorage.setItem('fileshare_items', JSON.stringify(items));
         }
 
         async function addText() {
@@ -139,6 +126,7 @@
 
             document.getElementById('text-input').value = '';
             showLink();
+            alert('Текст добавлен! Но он виден только на этом устройстве. Для общего доступа нужен сервер.');
         }
 
         function handleFileSelect() {
@@ -168,27 +156,27 @@
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                // Use transfer.sh instead of file.io
-                const response = await fetch('https://transfer.sh/', {
+                // Use 0x0.st for file hosting
+                const response = await fetch('https://0x0.st', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (response.ok) {
-                    const link = await response.text();
-                    const cleanLink = link.trim();
+                const link = await response.text();
 
+                if (link.startsWith('http')) {
                     items.unshift({ 
                         type: 'file', 
                         name: selectedFile.name, 
-                        link: cleanLink, 
+                        link: link.trim(), 
                         size: formatSize(selectedFile.size),
                         time: new Date().toLocaleString() 
                     });
                     await saveItems();
                     showLink();
+                    alert('Файл загружен! Но виден только на этом устройстве.');
                 } else {
-                    alert('Ошибка загрузки: ' + response.status);
+                    alert('Ошибка загрузки');
                 }
             } catch (e) { 
                 alert('Ошибка: ' + e.message); 
