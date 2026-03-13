@@ -10,12 +10,14 @@
         .container { background: white; border-radius: 24px; padding: 30px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
         h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 28px; }
         .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
-        textarea { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; resize: vertical; min-height: 150px; }
+        textarea { width: 100%; padding: 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 16px; resize: vertical; min-height: 150px; margin-bottom: 15px; }
         textarea:focus { outline: none; border-color: #1e3c72; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 15px; transition: all 0.3s; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 10px; transition: all 0.3s; }
         .primary-btn { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
         .secondary-btn { background: #f0f0f0; color: #333; }
+        .file-btn { background: #ff9800; color: white; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .result { margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 12px; display: none; }
         .result.show { display: block; }
         .result-text { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e0e0e0; word-break: break-all; font-family: monospace; margin-bottom: 15px; max-height: 100px; overflow-y: auto; }
@@ -25,30 +27,71 @@
         .shared-content { background: #e8f5e9; padding: 20px; border-radius: 12px; margin-top: 20px; white-space: pre-wrap; word-break: break-word; }
         .back-btn { background: #1e3c72; color: white; margin-top: 20px; }
         .warning { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; color: #856404; }
+        .divider { text-align: center; color: #999; margin: 20px 0; position: relative; }
+        .divider::before, .divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: #e0e0e0; }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+        .file-input { display: none; }
+        .file-label { display: block; padding: 30px; border: 2px dashed #ccc; border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 15px; }
+        .file-label:hover { border-color: #1e3c72; background: #f8f9fa; }
+        .file-info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none; }
+        .file-info.show { display: block; }
+        .loading { text-align: center; padding: 20px; display: none; }
+        .loading.show { display: block; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #1e3c72; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📂 File Share</h1>
-        <p class="subtitle">Делиться текстом легко</p>
+        <p class="subtitle">Загружай файлы и делись ими</p>
+
         <div id="create-mode">
-            <div class="warning">⚠️ Ссылка содержит весь текст. Не передавай чувствительные данные!</div>
+            <!-- Text Section -->
             <textarea id="text-input" placeholder="Введи текст для передачи..."></textarea>
-            <button class="btn primary-btn" onclick="createLink()">Создать ссылку</button>
-            <button class="btn secondary-btn" onclick="clearText()">Очистить</button>
+            <button class="btn primary-btn" onclick="createTextLink()">📝 Создать ссылку на текст</button>
+
+            <div class="divider">или</div>
+
+            <!-- File Section -->
+            <label class="file-label" for="file-input">
+                📎 Нажми, чтобы выбрать файл
+                <br><small style="color: #999;">(макс. 100MB)</small>
+            </label>
+            <input type="file" id="file-input" class="file-input" onchange="handleFileSelect()">
+
+            <div id="file-info" class="file-info">
+                <strong>Выбранный файл:</strong> <span id="file-name"></span>
+                <br><strong>Размер:</strong> <span id="file-size"></span>
+            </div>
+
+            <button id="upload-btn" class="btn file-btn" onclick="uploadFile()" style="display: none;">📤 Загрузить файл</button>
+
+            <button class="btn secondary-btn" onclick="clearAll()">🗑 Очистить</button>
         </div>
+
         <div id="view-mode" class="view-mode">
             <h2 style="margin-bottom: 15px;">📝 Полученный текст:</h2>
             <div id="shared-content" class="shared-content"></div>
-            <button class="btn back-btn" onclick="goBack()">← Создать свою ссылку</button>
+            <button class="btn back-btn" onclick="goBack()">← Загрузить свой файл</button>
         </div>
+
         <div id="result" class="result">
             <strong>Ссылка:</strong>
             <div class="result-text" id="result-text"></div>
             <button class="btn copy-btn" onclick="copyLink()">📋 Копировать</button>
         </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Загрузка файла...</p>
+        </div>
     </div>
+
     <script>
+        let selectedFile = null;
+
         window.onload = function() {
             const hash = window.location.hash.substring(1);
             if (hash) {
@@ -60,7 +103,56 @@
                 } catch (e) { alert('Ошибка декодирования'); }
             }
         };
-        function createLink() {
+
+        function handleFileSelect() {
+            const input = document.getElementById('file-input');
+            if (input.files.length > 0) {
+                selectedFile = input.files[0];
+                document.getElementById('file-name').textContent = selectedFile.name;
+                document.getElementById('file-size').textContent = formatSize(selectedFile.size);
+                document.getElementById('file-info').classList.add('show');
+                document.getElementById('upload-btn').style.display = 'block';
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('upload-btn').disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch('https://file.io', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('result-text').textContent = data.link;
+                    document.getElementById('result').classList.add('show');
+                } else {
+                    alert('Ошибка загрузки: ' + (data.message || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+
+            document.getElementById('loading').classList.remove('show');
+            document.getElementById('upload-btn').disabled = false;
+        }
+
+        function createTextLink() {
             const text = document.getElementById('text-input').value.trim();
             if (!text) { alert('Введи текст'); return; }
             const encoded = btoa(unescape(encodeURIComponent(text)));
@@ -68,14 +160,21 @@
             document.getElementById('result-text').textContent = link;
             document.getElementById('result').classList.add('show');
         }
+
         function copyLink() {
             const text = document.getElementById('result-text').textContent;
             navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(err => alert('Ошибка копирования'));
         }
-        function clearText() {
+
+        function clearAll() {
             document.getElementById('text-input').value = '';
+            document.getElementById('file-input').value = '';
+            selectedFile = null;
+            document.getElementById('file-info').classList.remove('show');
+            document.getElementById('upload-btn').style.display = 'none';
             document.getElementById('result').classList.remove('show');
         }
+
         function goBack() {
             window.location.hash = '';
             window.location.reload();
