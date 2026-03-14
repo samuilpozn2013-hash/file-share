@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureFiles</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; padding: 20px; color: #fff; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 28px; color: #00d4ff; }
+        .card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .card h2 { font-size: 18px; margin-bottom: 16px; color: #00d4ff; }
+        input[type="file"] { display: none; }
+        .file-btn { display: block; width: 100%; padding: 16px; background: rgba(0,212,255,0.1); border: 2px dashed rgba(0,212,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; color: #00d4ff; }
+        .file-info { margin-top: 12px; padding: 12px; background: rgba(0,255,136,0.1); border-radius: 8px; font-size: 14px; color: #00ff88; }
+        input[type="password"], textarea { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 16px; margin-bottom: 16px; }
+        textarea { min-height: 120px; resize: vertical; font-family: monospace; font-size: 13px; }
+        button { width: 100%; padding: 16px; background: linear-gradient(135deg, #00d4ff, #0099cc); border: none; border-radius: 10px; color: #000; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .result { margin-top: 16px; padding: 16px; background: rgba(0,255,136,0.1); border-radius: 10px; word-break: break-all; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        .copy-btn { margin-top: 12px; background: rgba(0,255,136,0.2); color: #00ff88; }
+        .download-btn { margin-top: 12px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: #fff; }
+        .error { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: none; border-radius: 10px; color: rgba(255,255,255,0.6); cursor: pointer; }
+        .tab.active { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SecureFiles</h1>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('encrypt')">Зашифровать</button>
+            <button class="tab" onclick="switchTab('decrypt')">Расшифровать</button>
+        </div>
+        <div id="encrypt-tab" class="tab-content active">
+            <div class="card">
+                <h2>Выберите файл</h2>
+                <label class="file-btn" for="fileInput">Нажмите для выбора</label>
+                <input type="file" id="fileInput" onchange="showFileInfo()">
+                <div id="fileInfo" class="file-info" style="display:none;"></div>
+            </div>
+            <div class="card">
+                <h2>Пароль</h2>
+                <input type="password" id="encryptPassword" placeholder="Введите пароль">
+            </div>
+            <button onclick="encryptFile()">Зашифровать</button>
+            <div id="encryptResult" class="result" style="display:none;"></div>
+            <button id="copyBtn" class="copy-btn" style="display:none;" onclick="copyResult()">Копировать</button>
+        </div>
+        <div id="decrypt-tab" class="tab-content">
+            <div class="card">
+                <h2>Зашифрованный текст</h2>
+                <textarea id="encryptedText" placeholder="Вставьте текст"></textarea>
+            </div>
+            <div class="card">
+                <h2>Пароль</h2>
+                <input type="password" id="decryptPassword" placeholder="Введите пароль">
+            </div>
+            <button onclick="decryptFile()">Расшифровать</button>
+            <div id="decryptError" class="result error" style="display:none;"></div>
+            <button id="downloadBtn" class="download-btn" style="display:none;" onclick="downloadFile()">Скачать</button>
+        </div>
+    </div>
+    <script>
+        var selectedFile = null;
+        var decryptedBlob = null;
+        var decryptedName = '';
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            if (tab === 'encrypt') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('encrypt-tab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('decrypt-tab').classList.add('active');
+            }
+        }
+        function showFileInfo() {
+            var input = document.getElementById('fileInput');
+            if (input.files.length > 0) {
+                selectedFile = input.files[0];
+                var info = document.getElementById('fileInfo');
+                info.style.display = 'block';
+                info.textContent = 'Выбран: ' + selectedFile.name + ' (' + formatSize(selectedFile.size) + ')';
+            }
+        }
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+            return (bytes/(1024*1024)).toFixed(1) + ' MB';
+        }
+        async function encryptFile() {
+            var password = document.getElementById('encryptPassword').value;
+            if (!selectedFile) { alert('Выберите файл!'); return; }
+            if (!password) { alert('Введите пароль!'); return; }
+            try {
+                var arrayBuffer = await selectedFile.arrayBuffer();
+                var base64 = btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)));
+                var encrypted = CryptoJS.AES.encrypt(base64, password).toString();
+                var result = JSON.stringify({name: selectedFile.name, data: encrypted});
+                var resultDiv = document.getElementById('encryptResult');
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = result;
+                document.getElementById('copyBtn').style.display = 'block';
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+        function copyResult() {
+            var text = document.getElementById('encryptResult').textContent;
+            navigator.clipboard.writeText(text).then(function() { alert('Скопировано!'); });
+        }
+        async function decryptFile() {
+            var encryptedText = document.getElementById('encryptedText').value.trim();
+            var password = document.getElementById('decryptPassword').value;
+            if (!encryptedText) { alert('Введите текст!'); return; }
+            if (!password) { alert('Введите пароль!'); return; }
+            try {
+                var obj = JSON.parse(encryptedText);
+                decryptedName = obj.name;
+                var decrypted = CryptoJS.AES.decrypt(obj.data, password);
+                var base64 = decrypted.toString(CryptoJS.enc.Utf8);
+                if (!base64) { throw new Error('Неверный пароль!'); }
+                var binaryString = atob(base64);
+                var bytes = new Uint8Array(binaryString.length);
+                for (var i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                decryptedBlob = new Blob([bytes]);
+                document.getElementById('decryptError').style.display = 'none';
+                document.getElementById('downloadBtn').style.display = 'block';
+            } catch (e) {
+                var errorDiv = document.getElementById('decryptError');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Ошибка: ' + e.message;
+                document.getElementById('downloadBtn').style.display = 'none';
+            }
+        }
+        function downloadFile() {
+            if (!decryptedBlob) return;
+            var url = URL.createObjectURL(decryptedBlob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = decryptedName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
