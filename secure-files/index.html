@@ -14,7 +14,6 @@
         input[type="file"] { display: none; }
         .file-btn { display: block; width: 100%; padding: 16px; background: rgba(0,212,255,0.1); border: 2px dashed rgba(0,212,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; color: #00d4ff; }
         .file-info { margin-top: 12px; padding: 12px; background: rgba(0,255,136,0.1); border-radius: 8px; font-size: 14px; color: #00ff88; }
-        input[type="text"] { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 16px; margin-bottom: 16px; }
         button { width: 100%; padding: 16px; background: linear-gradient(135deg, #00d4ff, #0099cc); border: none; border-radius: 10px; color: #000; font-size: 16px; font-weight: 600; cursor: pointer; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .link-result { margin-top: 16px; padding: 16px; background: rgba(0,255,136,0.1); border-radius: 10px; }
@@ -67,22 +66,27 @@
             btn.textContent = 'Загрузка...';
 
             try {
+                // Try 0x0.st first
                 var formData = new FormData();
                 formData.append('file', selectedFile);
 
-                var response = await fetch('https://file.io', {
+                var response = await fetch('https://0x0.st', {
                     method: 'POST',
                     body: formData
                 });
-                var result = await response.json();
 
-                if (result.success) {
+                if (!response.ok) throw new Error('Upload failed');
+
+                var link = await response.text();
+                link = link.trim();
+
+                if (link.startsWith('http')) {
                     document.getElementById('error').style.display = 'none';
                     document.getElementById('linkResult').style.display = 'block';
-                    document.getElementById('shareLink').href = result.link;
-                    document.getElementById('shareLink').textContent = result.link;
+                    document.getElementById('shareLink').href = link;
+                    document.getElementById('shareLink').textContent = link;
                 } else {
-                    throw new Error(result.message || 'Ошибка загрузки');
+                    throw new Error('Invalid response');
                 }
             } catch (e) {
                 var errorDiv = document.getElementById('error');
